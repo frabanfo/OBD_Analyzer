@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun --version 2>&1)",
+      "Bash(git clone https://github.com/garrytan/gstack.git \"/c/Users/Lorenzo Banfi SS/.claude/skills/gstack\" 2>&1)",
+      "Bash(cd \"/c/Users/Lorenzo Banfi SS/.claude/skills/gstack\" && bun --eval 'import { chromium } from \"playwright\"; const browser = await chromium.launch\\(\\); await browser.close\\(\\); console.log\\(\"OK\"\\)' 2>&1)",
+      "Bash(GSTACK_DIR=\"/c/Users/Lorenzo Banfi SS/.claude/skills/gstack\"\nSKILLS_DIR=\"/c/Users/Lorenzo Banfi SS/.claude/skills\"\n\nfor skill_dir in \"$GSTACK_DIR\"/*/; do\n  if [ -f \"$skill_dir/SKILL.md\" ]; then\n    skill_name=\"$\\(basename \"$skill_dir\"\\)\"\n    [ \"$skill_name\" = \"node_modules\" ] && continue\n    target=\"$SKILLS_DIR/$skill_name\"\n    if [ -L \"$target\" ] || [ ! -e \"$target\" ]; then\n      ln -snf \"gstack/$skill_name\" \"$target\"\n      echo \"linked: $skill_name\"\n    fi\n  fi\ndone)",
+      "Bash(\"/c/Users/Lorenzo Banfi SS/.claude/skills/gstack/browse/dist/browse.exe\" --version 2>&1 || \"/c/Users/Lorenzo Banfi SS/.claude/skills/gstack/browse/dist/browse.exe\" --help 2>&1 | head -5)"
+    ]
+  }
+}
