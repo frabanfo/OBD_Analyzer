@@ -42,6 +42,7 @@ mlruns/
 # ===============================
 # Dataset (non versionare dati pesanti)
 data/*.csv
+data/trips/
 datasets/
 images/
 videos/

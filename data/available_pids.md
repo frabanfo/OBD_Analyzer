@@ -1,5 +1,5 @@
-# PID disponibili — scansione 2026-03-26
-
+# PID disponibili — scansione 2026-03-26 - Volkswagen Polo V 1.4 Comfortline
+ 
 **Adattatore:** ELM327 v2.3
 **Tensione:** 11.2V
 **Standard:** EOBD (Europe)
@@ -40,11 +40,3 @@
 | MAF | Massa aria — non presente |
 | FUEL_LEVEL | Livello carburante — non presente |
 | VIN | Non supportato da obd==0.7.1 |
-
----
-
-## Note
-
-- RPM e SPEED a 0.0 perché rilevati a motore spento (quadro in ACC)
-- LONG_FUEL_TRIM_1 a -23.44% indica una correzione carburante significativa — da monitorare a motore caldo
-- DISTANCE_W_MIL = km percorsi con MIL (spia guasto) accesa — attualmente 0

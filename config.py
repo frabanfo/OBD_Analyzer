@@ -13,6 +13,20 @@ TIMEOUT = 30         # seconds to wait for connection
 LOG_DIR = "data"     # cartella dove vengono salvati i CSV
 SCAN_INTERVAL = 1.0  # seconds between reads in live mode
 
+# Mock mode (sviluppo senza auto)
+MOCK_MODE = True     # True = dati simulati, False = connessione OBD reale
+
+# Motore (usato per stima potenza)
+ENGINE_DISPLACEMENT_CC = 1390   # cilindrata in cc (Polo V 1.4 16V = 1390)
+ENGINE_MAX_CV = 85               # solo per riferimento visivo sul grafico
+
+# Dashboard
+DASHBOARD_HOST = "127.0.0.1"
+DASHBOARD_PORT = 8050
+BUFFER_SIZE = 300    # punti dati massimi nel buffer (5 min a 1Hz)
+GRAPH_WINDOW = 120   # secondi visibili nel grafico
+BRAKING_SMOOTH = 5   # punti per smoothing derivata velocità
+
 # PID da leggere in modalita' live (nomi dei comandi obd.commands.*)
 # Scopri quali supporta la tua auto eseguendo scan_pids.py
 LIVE_PIDS = [
