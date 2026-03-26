@@ -14,12 +14,12 @@ env/
 ENV/
 
 # ===============================
-# Cursor / VS Code
+# Cursor / VS Code / Claude
 # ===============================
 .cursor/
 .vscode/
 *.code-workspace
-/
+.claude/
 # ===============================
 # OS files
 # ===============================
@@ -41,7 +41,7 @@ mlruns/
 
 # ===============================
 # Dataset (non versionare dati pesanti)
-data/
+data/*.csv
 datasets/
 images/
 videos/

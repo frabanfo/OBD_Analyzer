@@ -5,25 +5,7 @@ Esegui questo script per capire cosa riesce a leggere il tuo adattatore.
 """
 
 import obd
-import config
-
-
-def connect():
-    print(f"Connessione OBD2... (porta: {config.PORT or 'auto-detect'})")
-    connection = obd.OBD(
-        portstr=config.PORT,
-        baudrate=config.BAUDRATE,
-        fast=config.FAST,
-        timeout=config.TIMEOUT,
-    )
-    if not connection.is_connected():
-        print("\n[ERRORE] Impossibile connettersi all'adattatore OBD2.")
-        print("  - Verifica che l'adattatore sia inserito nella porta OBD2")
-        print("  - Controlla il numero di porta COM in config.py")
-        print("  - Assicurati che il motore sia acceso o in modalità ACC")
-        return None
-    print(f"[OK] Connesso su {connection.port_name()}\n")
-    return connection
+from utils import connect
 
 
 def scan_supported_pids(connection):
@@ -82,13 +64,8 @@ def print_vehicle_info(connection):
     print("INFORMAZIONI VEICOLO")
     print("=" * 60)
 
-    info_commands = [
-        obd.commands.VIN,
-        obd.commands.ELM_VERSION,
-        obd.commands.ELM_VOLTAGE,
-        obd.commands.FUEL_TYPE,
-        obd.commands.OBD_COMPLIANCE,
-    ]
+    info_command_names = ["VIN", "ELM_VERSION", "ELM_VOLTAGE", "FUEL_TYPE", "OBD_COMPLIANCE"]
+    info_commands = [getattr(obd.commands, name) for name in info_command_names if hasattr(obd.commands, name)]
 
     for cmd in info_commands:
         if connection.supports(cmd):

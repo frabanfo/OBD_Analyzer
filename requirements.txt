@@ -1,2 +1,4 @@
 obd==0.7.1
 pyserial==3.5
+pint==0.23
+numpy==1.26.4

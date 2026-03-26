@@ -1,45 +1,27 @@
 """
 live_reader.py
-Legge i dati OBD2 in tempo reale e li salva su CSV.
+Legge i dati OBD2 in tempo reale e li salva su CSV nella cartella data/.
 Premi Ctrl+C per fermare.
 """
 
 import csv
+import os
 import time
 import datetime
 import obd
 import config
-
-# PID da leggere in modalità live — modifica in base a quello che supporta la tua auto
-# (scoprilo eseguendo prima scan_pids.py)
-LIVE_COMMANDS = [
-    obd.commands.RPM,
-    obd.commands.SPEED,
-    obd.commands.COOLANT_TEMP,
-    obd.commands.INTAKE_TEMP,
-    obd.commands.THROTTLE_POS,
-    obd.commands.ENGINE_LOAD,
-    obd.commands.FUEL_LEVEL,
-    obd.commands.MAF,
-    obd.commands.O2_B1S1,
-    obd.commands.SHORT_FUEL_TRIM_1,
-    obd.commands.LONG_FUEL_TRIM_1,
-]
+from utils import connect
 
 
-def connect():
-    print(f"Connessione OBD2...")
-    connection = obd.OBD(
-        portstr=config.PORT,
-        baudrate=config.BAUDRATE,
-        fast=config.FAST,
-        timeout=config.TIMEOUT,
-    )
-    if not connection.is_connected():
-        print("[ERRORE] Impossibile connettersi. Controlla config.py e l'adattatore.")
-        return None
-    print(f"[OK] Connesso su {connection.port_name()}\n")
-    return connection
+def build_commands():
+    commands = []
+    for name in config.LIVE_PIDS:
+        cmd = getattr(obd.commands, name, None)
+        if cmd is None:
+            print(f"[WARN] PID sconosciuto in config.py: '{name}' — ignorato")
+        else:
+            commands.append(cmd)
+    return commands
 
 
 def filter_supported(connection, commands):
@@ -52,13 +34,17 @@ def filter_supported(connection, commands):
 
 
 def read_loop(connection, commands):
+    os.makedirs(config.LOG_DIR, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file = os.path.join(config.LOG_DIR, f"obd_{timestamp}.csv")
+
     fieldnames = ["timestamp"] + [cmd.name for cmd in commands]
 
-    with open(config.LOG_FILE, "w", newline="") as f:
+    with open(log_file, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
-        print(f"Logging su '{config.LOG_FILE}' — Ctrl+C per fermare\n")
+        print(f"Logging su '{log_file}' — Ctrl+C per fermare\n")
         print("  " + "  |  ".join(f"{cmd.name:<20}" for cmd in commands))
         print("-" * (22 * len(commands)))
 
@@ -87,21 +73,23 @@ def read_loop(connection, commands):
         except KeyboardInterrupt:
             print("\n\n[STOP] Lettura interrotta dall'utente.")
 
+    print(f"Dati salvati in: {log_file}")
+
 
 def main():
     connection = connect()
     if connection is None:
         return
 
-    supported = filter_supported(connection, LIVE_COMMANDS)
+    commands = build_commands()
+    supported = filter_supported(connection, commands)
     if not supported:
-        print("[ERRORE] Nessuno dei PID configurati è supportato. Esegui scan_pids.py prima.")
+        print("[ERRORE] Nessuno dei PID configurati e' supportato. Esegui scan_pids.py prima.")
         connection.close()
         return
 
     read_loop(connection, supported)
     connection.close()
-    print(f"Dati salvati in: {config.LOG_FILE}")
 
 
 if __name__ == "__main__":
