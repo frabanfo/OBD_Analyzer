@@ -25,16 +25,15 @@ def _calc_braking(speed_history: deque) -> float:
         speeds = speeds[-config.BRAKING_SMOOTH:]
     delta_speed = (speeds[-1] - speeds[0]) / len(speeds)
     # Converti da km/h/campione a m/s²
-    delta_ms2 = (delta_speed / 3.6) / config.SCAN_INTERVAL
+    delta_ms2 = (delta_speed / 3.6) / (config.DISPLAY_INTERVAL_MS / 1000.0)
     return round(delta_ms2, 3)
 
 
 def _real_reader(buffer: DataBuffer, gear_detector: GearDetector,
                  trip: TripSummary, stop_event: threading.Event):
-    """Legge dati dall'adattatore OBD2 reale."""
+    """Legge dati dall'adattatore OBD2 con modalità asincrona (più veloce)."""
     import obd
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from utils import connect
+    import datetime as dt_mod
 
     PIDS = {
         "rpm":             obd.commands.RPM,
@@ -43,10 +42,9 @@ def _real_reader(buffer: DataBuffer, gear_detector: GearDetector,
         "engine_load":     obd.commands.ENGINE_LOAD,
         "coolant_temp":    obd.commands.COOLANT_TEMP,
         "intake_temp":     obd.commands.INTAKE_TEMP,
-        "short_fuel_trim":  obd.commands.SHORT_FUEL_TRIM_1,
-        "long_fuel_trim":   obd.commands.LONG_FUEL_TRIM_1,
-        "intake_pressure":  obd.commands.INTAKE_PRESSURE,
-        "intake_temp":      obd.commands.INTAKE_TEMP,
+        "short_fuel_trim": obd.commands.SHORT_FUEL_TRIM_1,
+        "long_fuel_trim":  obd.commands.LONG_FUEL_TRIM_1,
+        "intake_pressure": obd.commands.INTAKE_PRESSURE,
     }
 
     speed_history = deque(maxlen=config.BRAKING_SMOOTH + 2)
@@ -55,14 +53,31 @@ def _real_reader(buffer: DataBuffer, gear_detector: GearDetector,
     while not stop_event.is_set():
         if connection is None or not connection.is_connected():
             print("[OBD] Connessione in corso...")
-            connection = connect()
-            if connection is None:
+            if connection is not None:
+                try:
+                    connection.stop()
+                    connection.close()
+                except Exception:
+                    pass
+            connection = obd.Async(
+                portstr=config.PORT,
+                baudrate=config.BAUDRATE,
+                fast=config.FAST,
+                timeout=config.TIMEOUT,
+            )
+            if not connection.is_connected():
+                print("[OBD] Connessione fallita, riprovo in 5s...")
+                connection = None
                 stop_event.wait(5.0)
                 continue
-            print("[OBD] Connesso.")
+            for cmd in PIDS.values():
+                if connection.supports(cmd):
+                    connection.watch(cmd)
+            connection.start()
+            print("[OBD] Connesso (async).")
 
-        import datetime
-        record = {"timestamp": datetime.datetime.now().isoformat()}
+        # Leggi i valori cached — non blocca la seriale
+        record = {"timestamp": dt_mod.datetime.now().isoformat()}
         for key, cmd in PIDS.items():
             if connection.supports(cmd):
                 resp = connection.query(cmd)
@@ -74,7 +89,7 @@ def _real_reader(buffer: DataBuffer, gear_detector: GearDetector,
                 record[key] = None
 
         speed = record.get("speed") or 0.0
-        rpm = record.get("rpm") or 0.0
+        rpm   = record.get("rpm")   or 0.0
         speed_history.append(speed)
         record["braking"] = _calc_braking(speed_history)
 
@@ -83,10 +98,14 @@ def _real_reader(buffer: DataBuffer, gear_detector: GearDetector,
 
         buffer.add(record)
         trip.update(record)
-        stop_event.wait(config.SCAN_INTERVAL)
+        stop_event.wait(config.DISPLAY_INTERVAL_MS / 1000.0)
 
-    if connection:
-        connection.close()
+    if connection is not None:
+        try:
+            connection.stop()
+            connection.close()
+        except Exception:
+            pass
     gear_detector.save_profile()
 
 

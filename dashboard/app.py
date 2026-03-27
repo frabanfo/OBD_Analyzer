@@ -252,7 +252,7 @@ app.layout = html.Div(
             ],
         ),
 
-        dcc.Interval(id="interval", interval=int(config.SCAN_INTERVAL * 1000)),
+        dcc.Interval(id="interval", interval=config.DISPLAY_INTERVAL_MS),
     ],
 )
 

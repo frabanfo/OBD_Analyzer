@@ -40,9 +40,11 @@ class TripSummary:
         speed = record.get("speed") or 0.0
         map_k = record.get("intake_pressure")
         temp  = record.get("intake_temp")
-        dt    = config.SCAN_INTERVAL
 
+        now = time.monotonic()
         with self._lock:
+            dt = min(now - self._last_update_t, 30.0) if self._last_update_t else config.SCAN_INTERVAL
+            self._last_update_t = now
             self._update(rpm, speed, map_k, temp, dt)
 
     def reset(self):
@@ -98,6 +100,7 @@ class TripSummary:
         self._speed_sum = 0.0
         self._max_speed = 0.0
         self._n_driving = 0
+        self._last_update_t = None
 
     def _get_stats_unlocked(self) -> dict:
         dist = self._dist_km
