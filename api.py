@@ -38,7 +38,7 @@ buffer           = DataBuffer()
 trip             = TripSummary()
 stop_event       = threading.Event()
 current_room     = {"code": None}
-
+relay_task      = None
 # ---------------------------------------------------------------------------
 # App FastAPI
 # ---------------------------------------------------------------------------
@@ -54,7 +54,8 @@ def health():
 
 @app.post("/rooms")
 async def create_room():
-    """Crea una nuova stanza sul relay e ritorna codice + URL."""
+    global relay_task
+
     async with httpx.AsyncClient() as client:
         r = await client.post(
             f"{RELAY_HTTP}/rooms",
@@ -62,8 +63,15 @@ async def create_room():
         )
         r.raise_for_status()
         data = r.json()
+
     current_room["code"] = data["code"]
     print(f"[room] Stanza creata: {data['code']}")
+
+    # Cancella il task precedente e avviane uno nuovo
+    if relay_task and not relay_task.done():
+        relay_task.cancel()
+    relay_task = asyncio.create_task(push_to_relay())
+
     return data
 
 
@@ -114,9 +122,7 @@ async def push_to_relay():
 async def startup():
     start_reader(buffer, trip, stop_event)
     print(f"[OBD] Reader avviato — {'MOCK' if config.MOCK_MODE else 'REALE'}")
-    asyncio.create_task(push_to_relay())
-    print("[relay] Push task avviato")
-
+    print("[relay] In attesa di una stanza...")
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=False)
