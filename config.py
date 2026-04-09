@@ -14,7 +14,7 @@ LOG_DIR = "data"     # cartella dove vengono salvati i CSV
 SCAN_INTERVAL = 1.0  # seconds between reads in live mode
 
 # Mock mode (sviluppo senza auto)
-MOCK_MODE = False    # True = dati simulati, False = connessione OBD reale
+MOCK_MODE = True    # True = dati simulati, False = connessione OBD reale
 
 # Motore (usato per stima potenza)
 ENGINE_DISPLACEMENT_CC = 1390   # cilindrata in cc (Polo V 1.4 16V = 1390)
